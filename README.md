@@ -61,3 +61,47 @@ console.log(user2.fullName); // Output: "John Smith"
 - `Each function call creates a new execution context with its own memory space`, so firstName, lastName, and fullName do not interfere between calls.
 - The global variables user1 and user2 `store the returned results from each function invocation separately`.
 - `Each invocation is isolated`, so modifying one user profile `does not affect the other`.
+
+## 1.3 - Call Stack
+
+The call stack in JavaScript is a mechanism for `managing function execution and tracking the program’s current position`.
+It works in a `"Last In, First Out"` (LIFO) manner to keep track of active functions.
+
+The call stack helps JavaScript `keep track of "where it is" in the code, ensuring functions execute in the proper order`.
+
+Key Points:
+
+1. **Global Context**: The global execution context is added to the bottom of the call stack when JavaScript starts running.
+
+2. **Adding Functions**: Each time `a function is invoked, it’s added to the top of the call stack`. For example, calling multiplyBy2 with num (3) pushes the function with inputNumber = 3 onto the stack.
+
+3. **Executing and Removing**: `JavaScript executes the function and removes it from the stack upon hitting a return statement`, resuming execution at the previous context.
+
+4. **Nested Calls**: `When a function calls another function, the new function is added to the top of the stack`, and JavaScript only focuses on the topmost function.
+
+5. **Returning to Global**: When all `functions are complete, the stack returns to the global context`.
+
+```js
+// 1. Global Context: JavaScript starts in the global context and adds it to the call stack.
+
+console.log("Program Start"); // Step A: This is executed in the global context.
+
+function multiplyBy2(inputNumber) {
+  // Step B: multiplyBy2 is called and added to the call stack.
+  return inputNumber * 2; // Executes and returns a value, then is removed from the stack.
+}
+
+function square(num) {
+  // Step C: square is called and added to the call stack.
+  return multiplyBy2(num) * num; // Calls multiplyBy2, creating a nested call.
+}
+
+function printResult() {
+  // Step D: printResult is called and added to the call stack.
+  const result = square(3); // Calls square, which calls multiplyBy2.
+  console.log("Result:", result); // Logs the final result, then is removed from the stack.
+}
+
+printResult(); // Step D: Begins the process by calling printResult.
+console.log("Program End"); // Step E: This runs after all other calls finish.
+```
