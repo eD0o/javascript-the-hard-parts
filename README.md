@@ -5,7 +5,7 @@
 1. **Purpose of Functions**:
 
    - Functions `encapsulate code to allow for easy reuse and maintain DRY` (Don't Repeat Yourself) principles.
-   - Rewriting similar functions, like tenSquared, nineSquared, etc., demonstrates repetitive code that’s hard to maintain.
+   - Rewriting similar functions, like tenSquared, nineSquared, etc., demonstrates repetitive code that's hard to maintain.
 
 ```js
 function tenSquared() {
@@ -73,7 +73,7 @@ Therefore, they can be:
 
 ## 2.3 - Callback Functions
 
-A callback function is `a function passed as an argument to another function`, where it can be invoked later as part of that function’s execution.
+A callback function is `a function passed as an argument to another function`, where it can be invoked later as part of that function's execution.
 
 This mechanism enables greater flexibility in programming by allowing specific tasks or operations to be defined outside the main function logic.
 
@@ -107,3 +107,65 @@ validateUser(user, greet); // Output: Hello, Alice!
 const user2 = { name: "Bob", isLoggedIn: false };
 validateUser(user2, greet); // Output: User is not logged in.
 ```
+
+## 2.4 - Anonymous and Arrow functions
+
+## 2.4.1 - Anonymous Functions
+
+Anonymous functions are `functions without a name`, often used as one-off functions, particularly in callbacks.
+
+```JS
+const arr = [1, 2, 3];
+arr.forEach(function (num) {
+  console.log(num * 2); // Outputs: 2, 4, 6
+});
+```
+
+- No specific this binding: `this depends on how the function is called`.
+- Can be reused by assigning to a variable.
+
+## 2.4.2 - Arrow Functions
+
+Arrow functions are `a shorter syntax for anonymous functions`, introduced in ES6. They `have lexical (inherited) this and support implicit returns`.
+
+Syntax:
+
+```JS
+(param1, param2) => expression
+// OR
+(param) => { /* code */ }
+```
+
+Example:
+
+```JS
+const doubled = arr.map((num) => num * 2); // [2, 4, 6]
+```
+
+- Lexical this: `Inherits this from the outer function`.
+- No prototype or arguments: `Cannot be used as constructors`.
+
+## Key Differences
+
+| Feature    | Anonymous Function          | Arrow Function          |
+| ---------- | --------------------------- | ----------------------- |
+| **`this`** | Depends on call site        | Lexically inherited     |
+| **Syntax** | `function() { /* code */ }` | `(param) => expression` |
+
+`this` Example:
+
+```JS
+function Timer() {
+  this.time = 0;
+  setInterval(() => {
+    this.time++; // Refers to `Timer` instance due to lexical `this`
+  }, 1000);
+}
+```
+
+When to Use Arrow Functions: 
+
+- For `concise syntax in inline callbacks`.
+- When you need `this from the outer function`.
+
+Arrow functions `simplify syntax and maintain consistent this binding, ideal for short functions` in methods like map, filter, and event handlers.
