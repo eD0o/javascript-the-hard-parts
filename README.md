@@ -110,3 +110,58 @@ Useful for implementing `caching, memoization, or encapsulating private state` w
 4. Encapsulation of Private Variables:
 
 This pattern allows for the `creation of private variables that are accessible only to the returned function`, providing better modularity and data protection.
+
+## 3.3 - Nested Function scope
+
+This example introduces the `mechanics of scope and variable` lookup in nested functions, setting the stage for exploring closures, where a function retains access to variables in its defining scope even after that scope has closed.
+
+```js
+function outer() {
+  let counter = 0;
+  function incrementCounter() {
+    counter++;
+  }
+  incrementCounter();
+}
+outer();
+```
+
+![](https://i.imgur.com/M3ob82J.jpeg)
+
+1.  Function Execution Context:
+
+    - When outer() is called, a new execution context is created, and the variable counter is initialized to 0 in outer's local memory.
+    - The function incrementCounter is defined and stored in outer's local memory.
+
+2.  Nested Function Execution:
+
+    - incrementCounter() is executed immediately within outer().
+    - During execution, incrementCounter looks for the variable counter:
+
+      - It first checks its own local memory (incrementCounter's own scope).
+      - Failing to find counter there, it steps out to the memory of outer (the function where it was defined).
+
+    - counter++ increments the value stored in outer's scope, showing how inner functions can access and modify variables in their defining scope.
+
+3.  Call Stack and Scope Chain:
+
+    - JavaScript uses a call stack to manage function calls and a scope chain to resolve variable references.
+
+      1. Global context (outer is defined).
+      2. outer execution context (creates counter and defines incrementCounter).
+      3. incrementCounter execution context (runs its code).
+
+      After each function call finishes, its execution context is removed from the stack.
+
+4.  Conceptual Question: `Why does incrementCounter access counter`?
+
+Is it because:
+
+1. It was defined in outer (closure)?
+2. Or because it was executed within outer?
+
+> The answer is closures: the defining context of a function determines what variables it can access.
+
+When `incrementCounter is defined, it captures a reference to its lexical environment` (the scope where it was created).
+
+This `lexical environment includes counter, even if incrementCounter is executed later` or in a different context.
