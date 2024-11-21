@@ -165,3 +165,36 @@ Is it because:
 When `incrementCounter is defined, it captures a reference to its lexical environment` (the scope where it was created).
 
 This `lexical environment includes counter, even if incrementCounter is executed later` or in a different context.
+
+## 3.4 - Retaining Function Memory
+
+Following the code below:
+
+```js
+function outer() {
+  let counter = 0; // Local variable
+  function incrementCounter() {
+    counter++; // Increment the counter
+  }
+  return incrementCounter; // Return the inner function
+}
+
+const myNewFunction = outer(); // Invoke `outer` and assign the result
+myNewFunction(); // Increment the counter - output: 1
+myNewFunction(); // Increment the counter again - output: 2
+```
+
+Closure:
+
+When incrementCounter is returned, it doesn't just include the function code.
+It also includes a `closure a "backpack" that contains the surrounding local variables` (counter) from the environment where it was created.
+
+Retaining State:
+
+Even though the outer execution context is removed, the `closure allows the returned function (myNewFunction) to retain access to counter`.
+`Each call to myNewFunction increments the counter` variable preserved in the closure.
+
+Lexical Scope:
+
+JavaScript `functions "remember" the scope they were defined in`.
+When myNewFunction is invoked, it `looks for counter in the closure before looking at global` memory.
