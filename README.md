@@ -168,7 +168,7 @@ This `lexical environment includes counter, even if incrementCounter is executed
 
 ## 3.4 - Retaining Function Memory
 
-Following the code below:
+Consider the following code:
 
 ```js
 function outer() {
@@ -187,14 +187,78 @@ myNewFunction(); // Increment the counter again - output: 2
 Closure:
 
 When incrementCounter is returned, it doesn't just include the function code.
-It also includes a `closure a "backpack" that contains the surrounding local variables` (counter) from the environment where it was created.
+It carries a `closure, a "backpack" containing the surrounding local variables (counter)` from its creation environment.
 
 Retaining State:
 
 Even though the outer execution context is removed, the `closure allows the returned function (myNewFunction) to retain access to counter`.
 `Each call to myNewFunction increments the counter` variable preserved in the closure.
 
+> The counter variable persists in memory as part of the function's hidden [[Scope]]. It is private and can't be accessed directly, e.g., myNewFunction.counter or myNewFunction.scope.counter won't work.
+
 Lexical Scope:
 
 JavaScript `functions "remember" the scope they were defined in`.
 When myNewFunction is invoked, it `looks for counter in the closure before looking at global` memory.
+
+You can create a callback function that accesses the private data inside the closure. Here's an example:
+
+```js
+function outer() {
+  let counter = 0; // Local variable
+
+  function incrementCounter() {
+    counter++; // Increment the counter
+    return counter; // Return the updated counter
+  }
+
+  // A callback function that accesses the counter
+  function getCounterValue() {
+    return counter; // Access the current counter value
+  }
+
+  return { incrementCounter, getCounterValue }; // Expose both functions
+}
+
+const myFunctions = outer(); // Create the closure
+
+// Increment the counter
+console.log(myFunctions.incrementCounter()); // Output: 1
+console.log(myFunctions.incrementCounter()); // Output: 2
+
+// Use the callback to access the counter
+console.log(myFunctions.getCounterValue()); // Output: 2
+```
+
+If a new variable is assigned to a function (same closure for multiple labels), it retains the same "backpack" (closure).
+
+```js
+function outer() {
+  let counter = 0;
+
+  function incrementCounter() {
+    counter++;
+    return counter;
+  }
+
+  return incrementCounter;
+}
+
+const myNewFunction = outer();
+const mySecondNewFunction = myNewFunction; // Assigning a new label to the function
+console.log(myNewFunction()); // Output: 1
+console.log(mySecondNewFunction()); // Output: 2
+console.log(myNewFunction()); // Output: 3
+```
+
+## 3.5 - Closure Techincal Definition
+
+- **Persistent Lexical Static Scope Reference Data**:
+  - A formal term for the data carried in the "backpack".
+  - Emphasizes how data is preserved and linked to the function through lexical scoping.
+- **Closure (umbrella term)**:
+  - Refers to the broader concept of a function "capturing" its surrounding lexical environment.
+  - Often used interchangeably with "backpack" but includes both the behavior and the data.
+- **Variable Environment (Closed-Over Variable Environment)**:
+  - Refers to the actual set of variables stored in the closure.
+  - Represents the state of variables at the time the function is created and is carried with the function.
