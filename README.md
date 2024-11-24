@@ -262,3 +262,5 @@ console.log(myNewFunction()); // Output: 3
 - **Variable Environment (Closed-Over Variable Environment)**:
   - Refers to the actual set of variables stored in the closure.
   - Represents the state of variables at the time the function is created and is carried with the function.
+
+Take notes of the exercises link of this module and the 02 as well
