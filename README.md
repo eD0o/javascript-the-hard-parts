@@ -1,266 +1,203 @@
-# 3 - Closure
+# 4 - Understanding Asynchronous JavaScript
 
-## 3.1 - Introduction
+## 4.1 - Function Definitions and Calling Functions
 
-### 3.1.1 - Lexical Scoping & Execution Context
+We begin by defining two functions: printHello and blockFor1Sec. Here's the initial setup:
 
-A fundamental concept in JavaScript that involves `lexical scoping and execution context`.
-
-Lexical Scoping: Refers to `how a function remembers the variables that are in scope` at the time of its creation, not just when it is called.
-
-Execution Context: When a `function is invoked, a new execution context is created, which includes local memory` (or variable environment). Once `the function finishes execution, this context is deleted`, except for the returned value.
-
-```js
-// Lexical Scoping and Execution Context
-function outerFunction() {
-  let outerVariable = "I am from outer function!"; // outerVariable is in the lexical scope of outerFunction
-
-  function innerFunction() {
-    console.log(outerVariable); // innerFunction can access outerVariable due to lexical scoping
-  }
-
-  innerFunction(); // Calling innerFunction
+```javascript
+function printHello() {
+  console.log("Hello");
 }
 
-outerFunction(); // Calling outerFunction
-```
-
-Explanation:
-
-1 - Lexical Scoping:
-
-- innerFunction has access to outerVariable because of lexical scoping, which means it remembers the variables available in the scope where it was created (i.e., inside outerFunction), not just when it is executed.
-
-2 - Execution Context:
-
-- When outerFunction is called, a new execution context is created with its own memory (local variables). Inside outerFunction, the innerFunction has access to the execution context of its parent function due to lexical scoping.
-
-### 3.1.2 - Use Cases and Benefits
-
-Memoization: A performance optimization `technique where functions "remember"` previous results to avoid redundant calculations, making code more efficient.
-
-Design Patterns: Many JavaScript design patterns (like the module pattern, iterators, partial application, and currying) rely on closures for `maintaining state and managing asynchronous tasks`.
-
-State in Functions: `Closure allows a function to have a persistent memory, meaning it can "remember"` its previous execution states and influence its future behavior.
-
-## 3.2 - Returning Functions
-
-- When a function is called, a live store of data (local memory or variable environment) is created for that specific execution.
-- After the function finishes execution, its local memory is typically deleted, except for the returned value.
-
-Persistent Data Between Executions:
-
-- By returning a function from another function, we can enable a function to `hold onto live data even after its execution context is destroyed`.
-
-- Returning a function allows us to create "functions with memories" by preserving references to their parent function's local memory.
-  > This is foundational for **closures** in JavaScript.
-
-```js
-function createFunction() {
-  function multiplyBy2(num) {
-    return num * 2;
-  }
-  return multiplyBy2;
+function blockFor1Sec() {
+  // Simulating a delay with a loop (not using setTimeout here)
+  for (let i = 0; i < 1e9; i++) {} // Blocking operation
 }
-const generatedFunc = createFunction(); // `multiplyBy2` is returned and assigned to `generatedFunc`.
-const result = generatedFunc(3); // 6
-
-// The `generatedFunc` is the `multiplyBy2` function returned from `createFunction`.
-// It retains access to variables and scope of `createFunction` at the time it was created, thanks to closures.
 ```
 
-> generatedFunc is the result of a single execution of createFunction. While it no longer depends on createFunction being called again, it `retains access to the variables and scope of createFunction at the time it was created, thanks to closures`.
+At this point, we're setting up the basic functions that we'll use for our demonstration. We haven't yet introduced any asynchronous behavior.
 
-Another Example:
+## 4.2 - Understanding setTimeout
 
-```js
-function createCounter() {
-  let count = 0; // Persistent state stored in the closure
-  return function increment() {
-    count += 1; // Accesses the `count` variable in its parent's scope
-    return count;
-  };
-}
+Next, we introduce setTimeout to simulate asynchronous behavior. The key concept here is that `setTimeout doesn't actually execute the code immediately, but schedules it to be run after a certain time period.
 
-const counter = createCounter(); // Executes `createCounter` and returns `increment`
-console.log(counter()); // 1
-console.log(counter()); // 2
-console.log(counter()); // 3
+> Obs: Even if the delay is 0 milliseconds.
 
-const anotherCounter = createCounter(); // Creates a new, independent closure
-console.log(anotherCounter()); // 1
-console.log(anotherCounter()); // 2
-console.log(counter()); // 4
+```javascript
+setTimeout(printHello, 0);
+blockFor1Sec();
 ```
 
-Why Use This Pattern?
+What happens at this point?
 
-1. Persistent Memory:
+- setTimeout schedules printHello to run after 0 milliseconds.
+- Although setTimeout schedules printHello to run asynchronously, it won't execute immediately because blockFor1Sec runs synchronously, blocking the call stack until it completes.
 
-The `returned function can "remember" the environment it was created in, enabling it to access variables` from its parent function's scope.
+Execution Flow
 
-2. Dynamic Function Creation:
+- `printHello is passed to setTimeout, but it isn't immediately executed. It's placed into a callback queue.
+- The synchronous code, like `blockFor1Sec, continues running, blocking the execution of other asynchronous code until it finishes.
 
-`Functions can be dynamically generated with specific behaviors` based on the logic in the parent function.
+## 4.3 - Callback Queue and Event Loop
 
-3. Cache and State Management:
+The callback queue `holds functions that are scheduled to run asynchronously. These functions are executed only when the call stack is empty, `ensuring that synchronous code takes priority.
 
-Useful for implementing `caching, memoization, or encapsulating private state` within a function.
+### 4.3.1 - Event Loop
 
-4. Encapsulation of Private Variables:
+The event loop constantly `checks if the call stack is empty. If it is, it moves functions from the callback queue onto the call stack for execution. This process ensures that all synchronous code is executed first.
 
-This pattern allows for the `creation of private variables that are accessible only to the returned function`, providing better modularity and data protection.
-
-## 3.3 - Nested Function scope
-
-This example introduces the `mechanics of scope and variable` lookup in nested functions, setting the stage for exploring closures, where a function retains access to variables in its defining scope even after that scope has closed.
-
-```js
-function outer() {
-  let counter = 0;
-  function incrementCounter() {
-    counter++;
+```javascript
+// Event Loop Concept (simplified)
+while (true) {
+  if (callStackIsEmpty()) {
+    moveFromQueueToCallStack();
   }
-  incrementCounter();
 }
-outer();
 ```
 
-![](https://i.imgur.com/M3ob82J.jpeg)
+Execution Flow:
 
-1.  Function Execution Context:
+1. Calling blockFor1Sec: The function blockFor1Sec runs on the call stack and blocks further execution until it finishes. At this point, nothing from the callback queue (like printHello) can run because the call stack is still occupied.
 
-    - When outer() is called, a new execution context is created, and the variable counter is initialized to 0 in outer's local memory.
-    - The function incrementCounter is defined and stored in outer's local memory.
+2. Event Loop Check: While blockFor1Sec is running, the event loop checks if the call stack is empty. Since it's not empty (because blockFor1Sec is still running), the event loop doesn't move printHello to the call stack.
 
-2.  Nested Function Execution:
+3. Completion of blockFor1Sec: Once blockFor1Sec finishes, the event loop checks the callback queue. Since printHello has been sitting in the queue, it can now be moved to the call stack and executed.
 
-    - incrementCounter() is executed immediately within outer().
-    - During execution, incrementCounter looks for the variable counter:
+4. Executing printHello: At this point, printHello is executed, and the message "Hello" is logged to the console.
 
-      - It first checks its own local memory (incrementCounter's own scope).
-      - Failing to find counter there, it steps out to the memory of outer (the function where it was defined).
+> Functions in the callback queue are executed only after all synchronous code has finished running. This is why printHello isn't executed immediately, even though it was scheduled with setTimeout(0).
 
-    - counter++ increments the value stored in outer's scope, showing how inner functions can access and modify variables in their defining scope.
-
-3.  Call Stack and Scope Chain:
-
-    - JavaScript uses a call stack to manage function calls and a scope chain to resolve variable references.
-
-      1. Global context (outer is defined).
-      2. outer execution context (creates counter and defines incrementCounter).
-      3. incrementCounter execution context (runs its code).
-
-      After each function call finishes, its execution context is removed from the stack.
-
-4.  Conceptual Question: `Why does incrementCounter access counter`?
-
-Is it because:
-
-1. It was defined in outer (closure)?
-2. Or because it was executed within outer?
-
-> The answer is closures: the defining context of a function determines what variables it can access.
-
-When `incrementCounter is defined, it captures a reference to its lexical environment` (the scope where it was created).
-
-This `lexical environment includes counter, even if incrementCounter is executed later` or in a different context.
-
-## 3.4 - Retaining Function Memory
-
-Consider the following code:
-
-```js
-function outer() {
-  let counter = 0; // Local variable
-  function incrementCounter() {
-    counter++; // Increment the counter
-  }
-  return incrementCounter; // Return the inner function
+```javascript
+function printHello() {
+  console.log("Hello");
 }
 
-const myNewFunction = outer(); // Invoke `outer` and assign the result
-myNewFunction(); // Increment the counter - output: 1
-myNewFunction(); // Increment the counter again - output: 2
-```
-
-Closure:
-
-When incrementCounter is returned, it doesn't just include the function code.
-It carries a `closure, a "backpack" containing the surrounding local variables (counter)` from its creation environment.
-
-Retaining State:
-
-Even though the outer execution context is removed, the `closure allows the returned function (myNewFunction) to retain access to counter`.
-`Each call to myNewFunction increments the counter` variable preserved in the closure.
-
-> The counter variable persists in memory as part of the function's hidden [[Scope]]. It is private and can't be accessed directly, e.g., myNewFunction.counter or myNewFunction.scope.counter won't work.
-
-Lexical Scope:
-
-JavaScript `functions "remember" the scope they were defined in`.
-When myNewFunction is invoked, it `looks for counter in the closure before looking at global` memory.
-
-You can create a callback function that accesses the private data inside the closure. Here's an example:
-
-```js
-function outer() {
-  let counter = 0; // Local variable
-
-  function incrementCounter() {
-    counter++; // Increment the counter
-    return counter; // Return the updated counter
-  }
-
-  // A callback function that accesses the counter
-  function getCounterValue() {
-    return counter; // Access the current counter value
-  }
-
-  return { incrementCounter, getCounterValue }; // Expose both functions
+function blockFor1Sec() {
+  for (let i = 0; i < 1e9; i++) {} // Blocking operation
 }
 
-const myFunctions = outer(); // Create the closure
-
-// Increment the counter
-console.log(myFunctions.incrementCounter()); // Output: 1
-console.log(myFunctions.incrementCounter()); // Output: 2
-
-// Use the callback to access the counter
-console.log(myFunctions.getCounterValue()); // Output: 2
+setTimeout(printHello, 0); // Schedules printHello for execution
+blockFor1Sec(); // Blocks further execution
 ```
 
-If a new variable is assigned to a function (same closure for multiple labels), it retains the same "backpack" (closure).
+This demonstrates how the callback queue works in conjunction with the event loop to manage asynchronous code.
+
+## 4.4 - Timeout and Cancellation
+
+In JavaScript, `asynchronous operations can sometimes need to be canceled before they complete. This is especially useful when `handling timeouts or requests that might no longer be needed` due to user interaction or state changes.
+
+### 4.4.1 - Using setTimeout and clearTimeout
+
+setTimeout allows you to schedule a function to be executed after a specified time. However, `you can cancel it using clearTimeout` before the time expires.
 
 ```js
-function outer() {
-  let counter = 0;
+const timeoutID = setTimeout(() => {
+  console.log("This will not be logged if cleared");
+}, 5000);
 
-  function incrementCounter() {
-    counter++;
-    return counter;
-  }
-
-  return incrementCounter;
-}
-
-const myNewFunction = outer();
-const mySecondNewFunction = myNewFunction; // Assigning a new label to the function
-console.log(myNewFunction()); // Output: 1
-console.log(mySecondNewFunction()); // Output: 2
-console.log(myNewFunction()); // Output: 3
+// Clear the timeout before it runs
+clearTimeout(timeoutID);
 ```
 
-## 3.5 - Closure Techincal Definition
+In this example, the timeout is canceled before it has a chance to execute.
 
-- **Persistent Lexical Static Scope Reference Data**:
-  - A formal term for the data carried in the "backpack".
-  - Emphasizes how data is preserved and linked to the function through lexical scoping.
-- **Closure (umbrella term)**:
-  - Refers to the broader concept of a function "capturing" its surrounding lexical environment.
-  - Often used interchangeably with "backpack" but includes both the behavior and the data.
-- **Variable Environment (Closed-Over Variable Environment)**:
-  - Refers to the actual set of variables stored in the closure.
-  - Represents the state of variables at the time the function is created and is carried with the function.
+### 4.4.2 - Aborting Fetch Requests with AbortController
 
-Take notes of the exercises link of this module and the 02 as well
+Sometimes, network requests like fetch need to be canceled. This can be done using the AbortController API, which `allows you to signal cancellation of an asynchronous task.
+
+```js
+const controller = new AbortController();
+const signal = controller.signal;
+
+fetch("https://api.example.com", { signal })
+  .then((response) => response.json())
+  .catch((error) => console.error("Request was aborted:", error));
+
+// Abort the fetch request
+controller.abort();
+```
+
+`Even when canceling asynchronous tasks, the event loop remains essential. If a request is aborted, the event loop will continue to check if tasks need to be executed. If the canceled task had been in the callback queue, it would be ignored.
+
+## 4.5 - Introducing async and await`
+
+Unlike setTimeout, which relies on the callback queue and event loop, async and await provide a more modern and cleaner way of working with asynchronous code. They `allow us to write asynchronous code that looks synchronous, improving readability and reducing the need for callbacks.
+
+### 4.5.1 - async Function
+
+An `async function always returns a Promise. Even if you return a non-Promise value from an async function, `JavaScript will automatically wrap it in a resolved Promise.
+
+```javascript
+async function greet() {
+  return "Hello"; // This is equivalent to returning a resolved Promise with "Hello"
+}
+
+greet().then(console.log); // "Hello"
+```
+
+### 4.5.2 - await Expression
+
+The await keyword, used within an async function, `pauses the function's execution until the Promise resolves or rejects. However, `unlike synchronous code, it does not block the main thread or event loop.
+
+```javascript
+async function delayedGreeting() {
+  console.log("Before delay");
+
+  // Pauses here without blocking the event loop
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  console.log("After delay");
+}
+
+delayedGreeting();
+```
+
+In this example, await is used to wait for the Promise returned by setTimeout. Even though the code looks synchronous, it doesn't block the event loop. `The execution of the function will pause at await and continue after the delay without blocking other code from running`.
+
+### 4.5.3 - Event Loop and async / await`
+
+Although `async and await allow us to write asynchronous code that appears synchronous, they still use the event loop behind the scenes`. Here's how:
+
+1. Calling an async function: `When an async function is called, it returns a Promise`.
+2. Using await: The `execution of the async function is paused at each await expression`. This pause happens while the Promise is waiting to resolve, but it doesn't block the event loop.
+3. Event Loop Behavior: While waiting for the Promise to resolve, `the event loop continues to process other synchronous or asynchronous tasks`. Once the Promise resolves, the function continues executing from where it left off.
+
+Example: async/await with Blocking Operation
+
+```javascript
+async function greet() {
+  console.log("Before delay");
+
+  await new Promise((resolve) => setTimeout(resolve, 1000)); // Pauses here for 1 second
+
+  console.log("After delay");
+}
+
+async function blockFor1Sec() {
+  console.log("Start blocking");
+  for (let i = 0; i < 1e9; i++) {} // Blocking operation
+  console.log("End blocking");
+}
+
+async function main() {
+  greet(); // This will log "Before delay", wait for 1 second, then log "After delay"
+  blockFor1Sec(); // This blocks execution for 1 second
+}
+
+main();
+```
+
+In this scenario:
+
+1. greet is called first. It logs "Before delay", then waits for 1 second without blocking the event loop (thanks to await).
+2. blockFor1Sec runs next. It blocks the execution thread synchronously, so the event loop can't continue with any other tasks until it finishes.
+3. While blockFor1Sec runs synchronously, greet is paused at the await until the Promise resolves.
+
+## 4.6 - Conclusion: async and await vs setTimeout`
+
+While setTimeout schedules tasks to run asynchronously via the event loop, async and await provide a more intuitive way of handling asynchronous code. The key differences are:
+
+- `setTimeout works through the callback queue`, while `async and await work directly with Promise objects`.
+- async and await allow for writing asynchronous code in a way that looks and behaves like synchronous code, without blocking the event loop.
+
+`Both methods still rely on the event loop, but async/await provide a cleaner syntax` for handling promises and asynchronous flows.
