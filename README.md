@@ -1,203 +1,69 @@
-# 4 - Understanding Asynchronous JavaScript
+# 5 - Promises
 
-## 4.1 - Function Definitions and Calling Functions
+## 5.1 - Introduction
 
-We begin by defining two functions: printHello and blockFor1Sec. Here's the initial setup:
+Before ES6, JavaScript lacked a way to track background processes like `setTimeout. It didn't provide a direct connection between what's happening in the browser (background work) and JavaScript's memory`. This made it `challenging to maintain consistency between the two`.
 
-```javascript
-function printHello() {
-  console.log("Hello");
-}
+`Promises were introduced in ES6 to address this gap`. The core idea was to allow background processes (like setTimeout) to `have consequences in JavaScript memory, making it easier to track and manage the state` in both the background and JavaScript.
 
-function blockFor1Sec() {
-  // Simulating a delay with a loop (not using setTimeout here)
-  for (let i = 0; i < 1e9; i++) {} // Blocking operation
-}
-```
+### 5.1.1 - The Two-Pronged Facade Function
 
-At this point, we're setting up the basic functions that we'll use for our demonstration. We haven't yet introduced any asynchronous behavior.
+A new concept in ES6: two-pronged facade functions.
 
-## 4.2 - Understanding setTimeout
-
-Next, we introduce setTimeout to simulate asynchronous behavior. The key concept here is that `setTimeout doesn't actually execute the code immediately, but schedules it to be run after a certain time period.
-
-> Obs: Even if the delay is 0 milliseconds.
-
-```javascript
-setTimeout(printHello, 0);
-blockFor1Sec();
-```
-
-What happens at this point?
-
-- setTimeout schedules printHello to run after 0 milliseconds.
-- Although setTimeout schedules printHello to run asynchronously, it won't execute immediately because blockFor1Sec runs synchronously, blocking the call stack until it completes.
-
-Execution Flow
-
-- `printHello is passed to setTimeout, but it isn't immediately executed. It's placed into a callback queue.
-- The synchronous code, like `blockFor1Sec, continues running, blocking the execution of other asynchronous code until it finishes.
-
-## 4.3 - Callback Queue and Event Loop
-
-The callback queue `holds functions that are scheduled to run asynchronously. These functions are executed only when the call stack is empty, `ensuring that synchronous code takes priority.
-
-### 4.3.1 - Event Loop
-
-The event loop constantly `checks if the call stack is empty. If it is, it moves functions from the callback queue onto the call stack for execution. This process ensures that all synchronous code is executed first.
-
-```javascript
-// Event Loop Concept (simplified)
-while (true) {
-  if (callStackIsEmpty()) {
-    moveFromQueueToCallStack();
-  }
-}
-```
-
-Execution Flow:
-
-1. Calling blockFor1Sec: The function blockFor1Sec runs on the call stack and blocks further execution until it finishes. At this point, nothing from the callback queue (like printHello) can run because the call stack is still occupied.
-
-2. Event Loop Check: While blockFor1Sec is running, the event loop checks if the call stack is empty. Since it's not empty (because blockFor1Sec is still running), the event loop doesn't move printHello to the call stack.
-
-3. Completion of blockFor1Sec: Once blockFor1Sec finishes, the event loop checks the callback queue. Since printHello has been sitting in the queue, it can now be moved to the call stack and executed.
-
-4. Executing printHello: At this point, printHello is executed, and the message "Hello" is logged to the console.
-
-> Functions in the callback queue are executed only after all synchronous code has finished running. This is why printHello isn't executed immediately, even though it was scheduled with setTimeout(0).
-
-```javascript
-function printHello() {
-  console.log("Hello");
-}
-
-function blockFor1Sec() {
-  for (let i = 0; i < 1e9; i++) {} // Blocking operation
-}
-
-setTimeout(printHello, 0); // Schedules printHello for execution
-blockFor1Sec(); // Blocks further execution
-```
-
-This demonstrates how the callback queue works in conjunction with the event loop to manage asynchronous code.
-
-## 4.4 - Timeout and Cancellation
-
-In JavaScript, `asynchronous operations can sometimes need to be canceled before they complete. This is especially useful when `handling timeouts or requests that might no longer be needed` due to user interaction or state changes.
-
-### 4.4.1 - Using setTimeout and clearTimeout
-
-setTimeout allows you to schedule a function to be executed after a specified time. However, `you can cancel it using clearTimeout` before the time expires.
+- One prong `interacts with the web browser` (e.g., making network requests).
+- The other prong `returns a Promise object in JavaScript that tracks` the state of the background process.
 
 ```js
-const timeoutID = setTimeout(() => {
-  console.log("This will not be logged if cleared");
-}, 5000);
+// Example: The fetch function in JavaScript
 
-// Clear the timeout before it runs
-clearTimeout(timeoutID);
+fetch("https://api.example.com/data") // This speaks to the internet, sending the network request
+  .then((response) => response.json()) // When the response is received, convert it to JSON
+  .then((data) => console.log(data)) // Once data is ready, log it
+  .catch((error) => console.log(error)); // Catch any error if it occurs
 ```
 
-In this example, the timeout is canceled before it has a chance to execute.
+In this example:
 
-### 4.4.2 - Aborting Fetch Requests with AbortController
+- The fetch function sends a request to fetch data from the internet (`prong one: interacting with the browser`).
+- It returns a Promise object that can be used to handle the result in JavaScript when it's available (`prong two: reflecting the background operation in memory`).
 
-Sometimes, network requests like fetch need to be canceled. This can be done using the AbortController API, which `allows you to signal cancellation of an asynchronous task.
+The fetch function is a modern way to interact with the web browser to send network requests (e.g., to fetch data from the internet).
+
+- It sets up the request in the background (in the web browser).
+- It `simultaneously returns a Promise object in JavaScript, which will be filled with the response once the background work is complete`.
+
+## 5.2 - Promises Example: fetch
 
 ```js
-const controller = new AbortController();
-const signal = controller.signal;
+// Declares a function display and stores it in global memory.
+function display(data) {
+  console.log(data);
+}
 
-fetch("https://api.example.com", { signal })
-  .then((response) => response.json())
-  .catch((error) => console.error("Request was aborted:", error));
+// Declares a constant futureData (uninitialized at this stage). The fetch call triggers a two-pronged consequence:
+const futureData = fetch("https://twitter.com/will/tweets/1");
+/**
+ * 1. Sets up background work in the web browser.
+   2. Creates a Promise object in JavaScript with:
+    - value property (initially undefined).
+    - onFulfilled property (initially an empty array).
+*/
 
-// Abort the fetch request
-controller.abort();
+futureData.then(display); // This Promise object is stored in futureData and acts as a placeholder for data when the background task completes.
+
+console.log("Me first!");
 ```
 
-`Even when canceling asynchronous tasks, the event loop remains essential. If a request is aborted, the event loop will continue to check if tasks need to be executed. If the canceled task had been in the callback queue, it would be ignored.
+The Web Browser Work: The `fetch call initiates a network request to the specified URL`. It requires:
 
-## 4.5 - Introducing async and await`
+- The domain name (e.g., twitter.com) to identify the server.
+- The path to locate the specific data on the server.
 
-Unlike setTimeout, which relies on the callback queue and event loop, async and await provide a more modern and cleaner way of working with asynchronous code. They `allow us to write asynchronous code that looks synchronous, improving readability and reducing the need for callbacks.
+> By default, fetch uses the HTTP GET method to retrieve data.
 
-### 4.5.1 - async Function
+On Completion: Once the data is retrieved:
 
-An `async function always returns a Promise. Even if you return a non-Promise value from an async function, `JavaScript will automatically wrap it in a resolved Promise.
+1. `It is stored in the value property of the Promise object` (futureData.value).
+2. The Promise object's connection to the background task `ensures synchronization between the web browser and JavaScript` memory.
 
-```javascript
-async function greet() {
-  return "Hello"; // This is equivalent to returning a resolved Promise with "Hello"
-}
-
-greet().then(console.log); // "Hello"
-```
-
-### 4.5.2 - await Expression
-
-The await keyword, used within an async function, `pauses the function's execution until the Promise resolves or rejects. However, `unlike synchronous code, it does not block the main thread or event loop.
-
-```javascript
-async function delayedGreeting() {
-  console.log("Before delay");
-
-  // Pauses here without blocking the event loop
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  console.log("After delay");
-}
-
-delayedGreeting();
-```
-
-In this example, await is used to wait for the Promise returned by setTimeout. Even though the code looks synchronous, it doesn't block the event loop. `The execution of the function will pause at await and continue after the delay without blocking other code from running`.
-
-### 4.5.3 - Event Loop and async / await`
-
-Although `async and await allow us to write asynchronous code that appears synchronous, they still use the event loop behind the scenes`. Here's how:
-
-1. Calling an async function: `When an async function is called, it returns a Promise`.
-2. Using await: The `execution of the async function is paused at each await expression`. This pause happens while the Promise is waiting to resolve, but it doesn't block the event loop.
-3. Event Loop Behavior: While waiting for the Promise to resolve, `the event loop continues to process other synchronous or asynchronous tasks`. Once the Promise resolves, the function continues executing from where it left off.
-
-Example: async/await with Blocking Operation
-
-```javascript
-async function greet() {
-  console.log("Before delay");
-
-  await new Promise((resolve) => setTimeout(resolve, 1000)); // Pauses here for 1 second
-
-  console.log("After delay");
-}
-
-async function blockFor1Sec() {
-  console.log("Start blocking");
-  for (let i = 0; i < 1e9; i++) {} // Blocking operation
-  console.log("End blocking");
-}
-
-async function main() {
-  greet(); // This will log "Before delay", wait for 1 second, then log "After delay"
-  blockFor1Sec(); // This blocks execution for 1 second
-}
-
-main();
-```
-
-In this scenario:
-
-1. greet is called first. It logs "Before delay", then waits for 1 second without blocking the event loop (thanks to await).
-2. blockFor1Sec runs next. It blocks the execution thread synchronously, so the event loop can't continue with any other tasks until it finishes.
-3. While blockFor1Sec runs synchronously, greet is paused at the await until the Promise resolves.
-
-## 4.6 - Conclusion: async and await vs setTimeout`
-
-While setTimeout schedules tasks to run asynchronously via the event loop, async and await provide a more intuitive way of handling asynchronous code. The key differences are:
-
-- `setTimeout works through the callback queue`, while `async and await work directly with Promise objects`.
-- async and await allow for writing asynchronous code in a way that looks and behaves like synchronous code, without blocking the event loop.
-
-`Both methods still rely on the event loop, but async/await provide a cleaner syntax` for handling promises and asynchronous flows.
+This powerful mechanism allows JavaScript to handle asynchronous operations seamlessly while maintaining a clear structure for managing results and errors.
